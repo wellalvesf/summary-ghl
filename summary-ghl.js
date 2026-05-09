@@ -202,9 +202,12 @@
     const s = document.createElement('style');
     s.id = 'smry-css';
     s.textContent = `
-      #smry-btn{display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 12px;font-size:13px;font-weight:600;border:1px solid #818cf8;border-radius:6px;background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;cursor:pointer;transition:all .15s;margin:0 4px;flex-shrink:0;white-space:nowrap;box-shadow:0 1px 3px rgba(99,102,241,.3);font-family:inherit;box-sizing:border-box}
-      #smry-btn:hover{background:linear-gradient(135deg,#4f46e5,#6366f1);box-shadow:0 2px 8px rgba(99,102,241,.4);transform:translateY(-1px)}
-      #smry-btn:active{transform:translateY(0)}
+      #smry-btn{display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 11px;font-size:13px;font-weight:500;border:1px solid #d1d5db;border-radius:6px;background:#f9fafb;color:#374151;cursor:pointer;transition:all .15s;margin:0 4px;flex-shrink:0;white-space:nowrap;font-family:inherit;box-sizing:border-box;line-height:1}
+      #smry-btn:hover{background:#eef2ff;border-color:#a5b4fc;color:#4f46e5}
+      #smry-btn:focus{outline:none;border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.1)}
+      #smry-btn:active{transform:translateY(.5px)}
+      #smry-btn .smry-ic{display:inline-flex;width:14px;height:14px;color:#6366f1;flex-shrink:0}
+      #smry-btn:hover .smry-ic{color:#4f46e5}
       #smry-overlay{position:fixed;inset:0;z-index:99998;background:transparent}
       #smry-pop{position:fixed;z-index:99999;width:300px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.18);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;animation:smryIn .18s ease-out;overflow:hidden}
       @keyframes smryIn{from{opacity:0;transform:translateY(6px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
@@ -398,12 +401,18 @@
   };
 
   /* ─── Botão da toolbar ─── */
+  // SVG inline de sparkles (vibe IA) — não depende de fonte/emoji.
+  const SPARKLE_SVG =
+    '<svg class="smry-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>';
+
+  const renderBtnContent = (tr) => SPARKLE_SVG + '<span>' + tr.btnLabel + '</span>';
+
   const refreshButton = () => {
     const btn = document.getElementById('smry-btn');
     if (!btn) return;
     const tr = t();
     btn.title = tr.btnTitle;
-    btn.innerHTML = '📝 ' + tr.btnLabel;
+    btn.innerHTML = renderBtnContent(tr);
   };
 
   const mkBtn = () => {
@@ -412,7 +421,7 @@
     btn.type = 'button';
     const tr = t();
     btn.title = tr.btnTitle;
-    btn.innerHTML = '📝 ' + tr.btnLabel;
+    btn.innerHTML = renderBtnContent(tr);
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -422,122 +431,32 @@
   };
 
   /* ─── Injetar botão ─── */
-  // Tenta vários anchors em cascata. Se nenhum bater, espera o próximo
-  // ciclo do MutationObserver. Sem dependência do switch (#sw-selector
-  // é só um dos anchors possíveis, não o único).
-  const ANCHORS = [
-    {
-      // 1) Logo depois do switch dropdown (se existir)
-      find: () => document.getElementById('sw-selector'),
-      place: (anchor, btn) =>
-        anchor.parentElement.insertBefore(btn, anchor.nextSibling),
-      label: 'after #sw-selector',
-    },
-    {
-      // 2) Seletor do composer-textarea (mesmo do switch-v3)
-      find: () =>
-        document.querySelector(
-          '#composer-textarea > div > div.flex.items-center.h-\\[40px\\] > div.flex.flex-row.gap-2.items-center.pl-2.rounded-md.flex-1.min-w-0 > div:nth-child(2)',
-        ),
-      place: (anchor, btn) =>
-        anchor.parentElement.insertBefore(btn, anchor.nextSibling),
-      label: 'after composer slot 2',
-    },
-    {
-      // 3) Antes do botão de envio (fallback)
-      find: () => document.getElementById('conv-send-button-simple'),
-      place: (anchor, btn) => anchor.parentElement.insertBefore(btn, anchor),
-      label: 'before #conv-send-button-simple',
-    },
-    {
-      // 4) Qualquer botão dentro do composer-textarea
-      find: () => document.querySelector('#composer-textarea button'),
-      place: (anchor, btn) => anchor.parentElement.insertBefore(btn, anchor),
-      label: 'before first composer button',
-    },
-  ];
+  // Único anchor: a div interna do composer-textarea (mesmo do switch-v3).
+  // Quando o composer está fechado esse elemento NÃO existe → não injetamos
+  // nada. Quando o operador clica pra abrir o composer, o MutationObserver
+  // dispara e a injeção acontece naturalmente. Quando fecha, o composer
+  // some e leva o botão junto — na próxima abertura, re-injeta.
+  const findAnchor = () =>
+    document.querySelector(
+      '#composer-textarea > div > div.flex.items-center.h-\\[40px\\] > div.flex.flex-row.gap-2.items-center.pl-2.rounded-md.flex-1.min-w-0 > div:nth-child(2)',
+    );
 
   let injectedOnce = false;
-  let attempts = 0;
-  let failsafeUsed = false;
-
-  const injectFloatingFailsafe = () => {
-    if (document.getElementById('smry-btn')) return;
-    if (!getConversationId() && !getContactId()) return;
-
-    injectCss();
-    const wrap = document.createElement('div');
-    wrap.id = 'smry-floating-wrap';
-    wrap.style.cssText =
-      'position:fixed;bottom:90px;right:20px;z-index:9997;';
-    const btn = mkBtn();
-    btn.style.height = '40px';
-    btn.style.padding = '0 16px';
-    btn.style.fontSize = '14px';
-    btn.style.boxShadow = '0 4px 12px rgba(99,102,241,.45)';
-    wrap.appendChild(btn);
-    document.body.appendChild(wrap);
-    failsafeUsed = true;
-    WARN(
-      'Nenhum anchor da toolbar encontrado após ' +
-        attempts +
-        ' tentativas — usando botão flutuante (canto inferior direito).',
-    );
-  };
 
   const inject = () => {
     if (document.getElementById('smry-btn')) return;
     if (!getConversationId() && !getContactId()) return;
 
-    attempts += 1;
+    const anchor = findAnchor();
+    if (!anchor || !anchor.parentElement) return;
 
-    for (const a of ANCHORS) {
-      let anchor;
-      try {
-        anchor = a.find();
-      } catch (e) {
-        WARN('Selector falhou em "' + a.label + '"', e);
-        continue;
-      }
-      if (!anchor || !anchor.parentElement) continue;
-      injectCss();
-      const btn = mkBtn();
-      try {
-        a.place(anchor, btn);
-        if (!injectedOnce) {
-          LOG('✅ Injetado (' + a.label + ') após ' + attempts + ' tentativa(s).');
-          injectedOnce = true;
-        }
-        return;
-      } catch (e) {
-        WARN('Falha colocar em ' + a.label, e);
-      }
+    injectCss();
+    const btn = mkBtn();
+    anchor.parentElement.insertBefore(btn, anchor.nextSibling);
+    if (!injectedOnce) {
+      LOG('✅ Injetado dentro do composer-textarea.');
+      injectedOnce = true;
     }
-
-    if (attempts === 5 || attempts === 15) {
-      WARN(
-        'Anchors da toolbar não encontrados (tentativa ' +
-          attempts +
-          '). Diagnóstico:',
-        {
-          'has #sw-selector': !!document.getElementById('sw-selector'),
-          'has #composer-textarea': !!document.getElementById('composer-textarea'),
-          'has #conv-send-button-simple':
-            !!document.getElementById('conv-send-button-simple'),
-          'composer button count':
-            document.querySelectorAll('#composer-textarea button').length,
-          locationId: getLocationId(),
-          conversationId: getConversationId(),
-          contactId: getContactId(),
-        },
-      );
-    }
-  };
-
-  const triggerFailsafeIfNeeded = () => {
-    if (injectedOnce || failsafeUsed) return;
-    if (!getConversationId() && !getContactId()) return;
-    injectFloatingFailsafe();
   };
 
   /* ─── Lifecycle ─── */
@@ -549,10 +468,7 @@
   const onRouteChange = () => {
     closePopup();
     injectedOnce = false;
-    failsafeUsed = false;
-    attempts = 0;
     document.getElementById('smry-btn')?.remove();
-    document.getElementById('smry-floating-wrap')?.remove();
     inject();
   };
 
@@ -560,11 +476,8 @@
   window.addEventListener('routeChangeEvent', onRouteChange);
   document.addEventListener('DOMContentLoaded', inject);
 
-  setTimeout(inject, 800);
-  setTimeout(inject, 2500);
-  setTimeout(inject, 5000);
-  setTimeout(triggerFailsafeIfNeeded, 8000);
-  setTimeout(triggerFailsafeIfNeeded, 15000);
+  setTimeout(inject, 1000);
+  setTimeout(inject, 3000);
 
   // Helper de debug exposto: cole no console -> __summaryGhlDebug() pra ver tudo.
   window.__summaryGhlDebug = () => {
@@ -577,11 +490,8 @@
       contactId: getContactId(),
       buttonInDom: !!document.getElementById('smry-btn'),
       injectedOnce,
-      failsafeUsed,
-      attempts,
-      hasSwSelector: !!document.getElementById('sw-selector'),
       hasComposer: !!document.getElementById('composer-textarea'),
-      hasSendBtn: !!document.getElementById('conv-send-button-simple'),
+      hasAnchor: !!findAnchor(),
     };
     LOG('Debug info:', info);
     return info;
