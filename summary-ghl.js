@@ -202,12 +202,11 @@
     const s = document.createElement('style');
     s.id = 'smry-css';
     s.textContent = `
-      #smry-btn{display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 11px;font-size:13px;font-weight:500;border:1px solid #d1d5db;border-radius:6px;background:#f9fafb;color:#374151;cursor:pointer;transition:all .15s;margin:0 4px;flex-shrink:0;white-space:nowrap;font-family:inherit;box-sizing:border-box;line-height:1}
-      #smry-btn:hover{background:#eef2ff;border-color:#a5b4fc;color:#4f46e5}
+      #smry-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:1px solid transparent;border-radius:6px;background:transparent;color:#6b7280;cursor:pointer;transition:all .15s;margin:0 2px;flex-shrink:0;font-family:inherit;box-sizing:border-box;line-height:1}
+      #smry-btn:hover{background:#eef2ff;border-color:#c7d2fe;color:#4f46e5}
       #smry-btn:focus{outline:none;border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.1)}
       #smry-btn:active{transform:translateY(.5px)}
-      #smry-btn .smry-ic{display:inline-flex;width:14px;height:14px;color:#6366f1;flex-shrink:0}
-      #smry-btn:hover .smry-ic{color:#4f46e5}
+      #smry-btn .smry-ic{display:inline-flex;width:18px;height:18px;color:currentColor;flex-shrink:0}
       #smry-overlay{position:fixed;inset:0;z-index:99998;background:transparent}
       #smry-pop{position:fixed;z-index:99999;width:300px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.18);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;animation:smryIn .18s ease-out;overflow:hidden}
       @keyframes smryIn{from{opacity:0;transform:translateY(6px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
@@ -405,23 +404,23 @@
   const SPARKLE_SVG =
     '<svg class="smry-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>';
 
-  const renderBtnContent = (tr) => SPARKLE_SVG + '<span>' + tr.btnLabel + '</span>';
+  // Botão é icon-only — o label/idioma vão pro `title` (tooltip nativo).
+  const renderBtnContent = () => SPARKLE_SVG;
 
   const refreshButton = () => {
     const btn = document.getElementById('smry-btn');
     if (!btn) return;
-    const tr = t();
-    btn.title = tr.btnTitle;
-    btn.innerHTML = renderBtnContent(tr);
+    btn.title = t().btnTitle;
+    btn.innerHTML = renderBtnContent();
   };
 
   const mkBtn = () => {
     const btn = document.createElement('button');
     btn.id = 'smry-btn';
     btn.type = 'button';
-    const tr = t();
-    btn.title = tr.btnTitle;
-    btn.innerHTML = renderBtnContent(tr);
+    btn.title = t().btnTitle;
+    btn.setAttribute('aria-label', t().btnTitle);
+    btn.innerHTML = renderBtnContent();
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
