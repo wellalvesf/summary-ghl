@@ -431,31 +431,72 @@
   };
 
   /* ─── Injetar botão ─── */
-  // Único anchor: a div interna do composer-textarea (mesmo do switch-v3).
-  // Quando o composer está fechado esse elemento NÃO existe → não injetamos
-  // nada. Quando o operador clica pra abrir o composer, o MutationObserver
-  // dispara e a injeção acontece naturalmente. Quando fecha, o composer
-  // some e leva o botão junto — na próxima abertura, re-injeta.
-  const findAnchor = () =>
-    document.querySelector(
-      '#composer-textarea > div > div.flex.items-center.h-\\[40px\\] > div.flex.flex-row.gap-2.items-center.pl-2.rounded-md.flex-1.min-w-0 > div:nth-child(2)',
-    );
+  // Estratégia: ambos os anchors estão DENTRO da toolbar do composer aberto.
+  // Quando o composer está fechado, nenhum dos dois existe → não injetamos
+  // nada. Quando abre, o MutationObserver dispara e injeta naturalmente.
+  //
+  // 1) #sw-selector (dropdown do switch v3) é o anchor mais resiliente —
+  //    mesmo timing/região, sem depender das classes Tailwind exatas.
+  // 2) Fallback: o seletor original do composer-textarea (mesmo do switch)
+  //    pra clientes que não tenham o switch instalado.
+  const ANCHORS = [
+    {
+      label: 'after #sw-selector',
+      find: () => document.getElementById('sw-selector'),
+    },
+    {
+      label: 'after composer slot 2',
+      find: () =>
+        document.querySelector(
+          '#composer-textarea > div > div.flex.items-center.h-\\[40px\\] > div.flex.flex-row.gap-2.items-center.pl-2.rounded-md.flex-1.min-w-0 > div:nth-child(2)',
+        ),
+    },
+  ];
+
+  // Sanity check: garante que o anchor está mesmo dentro do composer aberto.
+  // Evita qualquer reinjection acidental fora da toolbar.
+  const isInsideComposer = (el) => {
+    const composer = document.getElementById('composer-textarea');
+    return !!(composer && el && composer.contains(el));
+  };
 
   let injectedOnce = false;
+  let attempts = 0;
 
   const inject = () => {
     if (document.getElementById('smry-btn')) return;
     if (!getConversationId() && !getContactId()) return;
 
-    const anchor = findAnchor();
-    if (!anchor || !anchor.parentElement) return;
+    attempts += 1;
 
-    injectCss();
-    const btn = mkBtn();
-    anchor.parentElement.insertBefore(btn, anchor.nextSibling);
-    if (!injectedOnce) {
-      LOG('✅ Injetado dentro do composer-textarea.');
-      injectedOnce = true;
+    for (const a of ANCHORS) {
+      let anchor;
+      try {
+        anchor = a.find();
+      } catch (e) {
+        continue;
+      }
+      if (!anchor || !anchor.parentElement) continue;
+      if (!isInsideComposer(anchor)) continue;
+
+      injectCss();
+      const btn = mkBtn();
+      anchor.parentElement.insertBefore(btn, anchor.nextSibling);
+      if (!injectedOnce) {
+        LOG('✅ Injetado (' + a.label + ') após ' + attempts + ' tentativa(s).');
+        injectedOnce = true;
+      }
+      return;
+    }
+
+    if (attempts === 5 || attempts === 20) {
+      WARN('Anchor não encontrado (tentativa ' + attempts + '). Diagnóstico:', {
+        hasSwSelector: !!document.getElementById('sw-selector'),
+        hasComposer: !!document.getElementById('composer-textarea'),
+        composerSlotMatch: !!document.querySelector(
+          '#composer-textarea > div > div.flex.items-center.h-\\[40px\\] > div.flex.flex-row.gap-2.items-center.pl-2.rounded-md.flex-1.min-w-0 > div:nth-child(2)',
+        ),
+      });
     }
   };
 
@@ -468,6 +509,7 @@
   const onRouteChange = () => {
     closePopup();
     injectedOnce = false;
+    attempts = 0;
     document.getElementById('smry-btn')?.remove();
     inject();
   };
@@ -490,8 +532,12 @@
       contactId: getContactId(),
       buttonInDom: !!document.getElementById('smry-btn'),
       injectedOnce,
+      attempts,
       hasComposer: !!document.getElementById('composer-textarea'),
-      hasAnchor: !!findAnchor(),
+      hasSwSelector: !!document.getElementById('sw-selector'),
+      composerSlotMatch: !!document.querySelector(
+        '#composer-textarea > div > div.flex.items-center.h-\\[40px\\] > div.flex.flex-row.gap-2.items-center.pl-2.rounded-md.flex-1.min-w-0 > div:nth-child(2)',
+      ),
     };
     LOG('Debug info:', info);
     return info;
