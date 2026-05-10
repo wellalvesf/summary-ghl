@@ -1,14 +1,12 @@
 /*  HighLevel – Custom JS · Summary Button v3
- *  Botão "📝 Summary" na toolbar do composer.
+ *  Botão de Summary na toolbar do composer.
  *  Abre popup multilíngue (PT/EN/ES/FR/IT/DE) com seletor de janela
- *  de dias e chama o backend stevo-ia-v2.
+ *  de dias e chama o backend de resumos.
  *
  *  Front envia apenas { locationId, conversationId | contactId, days }.
- *  Provider e idioma do RESUMO seguem a configuração da instância
- *  na Stevo. O idioma do POPUP é independente, escolhido pelo
- *  operador via bandeirinhas no topo (persistido em localStorage).
- *
- *  Repo: https://github.com/wellalvesf/summary-ghl
+ *  Provider e idioma do RESUMO seguem a configuração da instância.
+ *  O idioma do POPUP é independente, escolhido pelo operador via
+ *  bandeirinhas no topo (persistido em localStorage).
  */
 (function () {
     /* ─── Config ─── */
@@ -51,7 +49,7 @@
         periodLabel: 'Conversation window',
         dayOne: 'day',
         dayMany: 'days',
-        hint: 'Summary AI and language follow the configuration of your instance in Stevo.',
+        hint: 'Summary AI and language follow the configuration of your instance.',
         generate: 'Generate Summary',
         generating: 'Generating...',
         sending: 'Sending to backend...',
@@ -71,7 +69,7 @@
         periodLabel: 'Período de la conversación',
         dayOne: 'día',
         dayMany: 'días',
-        hint: 'La IA y el idioma del resumen siguen la configuración de tu instancia en Stevo.',
+        hint: 'La IA y el idioma del resumen siguen la configuración de tu instancia.',
         generate: 'Generar Resumen',
         generating: 'Generando...',
         sending: 'Enviando al backend...',
@@ -91,7 +89,7 @@
         periodLabel: 'Période de la conversation',
         dayOne: 'jour',
         dayMany: 'jours',
-        hint: "L'IA et la langue du résumé suivent la configuration de votre instance dans Stevo.",
+        hint: "L'IA et la langue du résumé suivent la configuration de votre instance.",
         generate: 'Générer le Résumé',
         generating: 'Génération...',
         sending: 'Envoi au backend...',
@@ -111,7 +109,7 @@
         periodLabel: 'Periodo della conversazione',
         dayOne: 'giorno',
         dayMany: 'giorni',
-        hint: "L'IA e la lingua del riepilogo seguono la configurazione della tua istanza su Stevo.",
+        hint: "L'IA e la lingua del riepilogo seguono la configurazione della tua istanza.",
         generate: 'Genera Riepilogo',
         generating: 'Generazione...',
         sending: 'Invio al backend...',
@@ -131,7 +129,7 @@
         periodLabel: 'Zeitraum der Unterhaltung',
         dayOne: 'Tag',
         dayMany: 'Tage',
-        hint: 'KI und Sprache der Zusammenfassung folgen der Konfiguration Ihrer Instanz in Stevo.',
+        hint: 'KI und Sprache der Zusammenfassung folgen der Konfiguration Ihrer Instanz.',
         generate: 'Zusammenfassung erstellen',
         generating: 'Wird erstellt...',
         sending: 'Wird gesendet...',
