@@ -31,7 +31,7 @@
         periodLabel: 'Período da conversa',
         dayOne: 'dia',
         dayMany: 'dias',
-        hint: 'A IA e o idioma do resumo seguem a configuração da sua instância na Stevo.',
+        hint: 'A IA e o idioma do resumo seguem a configuração da sua instância.',
         generate: 'Gerar Resumo',
         generating: 'Gerando...',
         sending: 'Enviando pro backend...',
